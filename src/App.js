@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const StressDiaryApp = () => {
   // ===== KONFIGŪRACIJA =====
   // Pakeiskite į savo Google Apps Script URL:
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvi2uRtjPJVWVVNZSNDO_58rh2fqA7ELrG31zcY6UFFDJIJ1KEYc_nLFwLmTscW0o/exec';
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzX0mjPhOAoMuV-5BXU2Cv3_qcMGj_HgM0mAfx7QOPRSkFIRJ3NOGY7g8fsHyuTv27-/exec';
   // =========================
 
   const [screen, setScreen] = useState('start'); // start, diary, endDay, summary
