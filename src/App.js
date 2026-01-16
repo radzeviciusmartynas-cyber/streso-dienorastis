@@ -5,6 +5,7 @@ const StressDiaryApp = () => {
   const [participantId, setParticipantId] = useState('');
   const [entries, setEntries] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState(null);
   const [currentEntry, setCurrentEntry] = useState({
     activity: '',
     stress: 3,
@@ -20,16 +21,18 @@ const StressDiaryApp = () => {
   });
 
   const activities = [
-    { code: 'E', name: 'El. laiškai', icon: '📧' },
-    { code: 'P', name: 'Posėdis', icon: '👥' },
-    { code: 'T', name: 'Telefonas', icon: '📞' },
-    { code: 'D', name: 'Dokumentai', icon: '📄' },
-    { code: 'A', name: 'Analizė', icon: '📊' },
-    { code: 'K', name: 'Kolegos', icon: '💬' },
-    { code: 'B', name: 'Klientai', icon: '🤝' },
-    { code: 'R', name: 'Rutina', icon: '⚙️' },
-    { code: 'S', name: 'Skubu!', icon: '⚡' },
-    { code: 'X', name: 'Pertrauka', icon: '☕' }
+    { code: 'E', name: 'El. laiškai', icon: '📧', tooltip: 'El. pašto tikrinimas, laiškų rašymas ir atsakymas' },
+    { code: 'P', name: 'Posėdis', icon: '👥', tooltip: 'Susitikimai, posėdžiai, pasitarimai (gyvai ar nuotoliniu būdu)' },
+    { code: 'T', name: 'Telefonas', icon: '📞', tooltip: 'Telefoniniai pokalbiai, skambučiai' },
+    { code: 'D', name: 'Dokumentai', icon: '📄', tooltip: 'Dokumentų ruošimas, redagavimas, tikrinimas, pasirašymas' },
+    { code: 'A', name: 'Analizė', icon: '📊', tooltip: 'Duomenų analizė, skaičiavimai, planavimas, strateginis mąstymas' },
+    { code: 'K', name: 'Kolegos', icon: '💬', tooltip: 'Neformalus bendravimas su kolegomis, kavos pertraukėlė su kolegomis' },
+    { code: 'ST', name: 'Studentai', icon: '🎓', tooltip: 'Bendravimas su studentais, konsultacijos, atsakymas į klausimus' },
+    { code: 'V', name: 'Veiklų organiz.', icon: '📋', tooltip: 'Renginių, veiklų, projektų organizavimas ir koordinavimas' },
+    { code: 'AD', name: 'Administravimas', icon: '🗂️', tooltip: 'Studijų procesų administravimas, sistemų pildymas, ataskaitos' },
+    { code: 'R', name: 'Rutina', icon: '⚙️', tooltip: 'Kasdienės rutininės užduotys, kurios netinka kitoms kategorijoms' },
+    { code: 'S', name: 'Skubu!', icon: '⚡', tooltip: 'Skubūs, neplanuoti darbai, „gaisrų gesinimas"' },
+    { code: 'X', name: 'Pertrauka', icon: '☕', tooltip: 'Pietūs, kavos pertrauka, poilsis, baseline matavimas' }
   ];
 
   const stressors = [
@@ -529,20 +532,30 @@ const StressDiaryApp = () => {
               <label className="block text-sm font-medium text-gray-600 mb-2">
                 Ką dabar darote?
               </label>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {activities.map((act) => (
-                  <button
-                    key={act.code}
-                    onClick={() => setCurrentEntry({...currentEntry, activity: act.code})}
-                    className={`p-2 rounded-xl text-center transition-all transform hover:scale-105 ${
-                      currentEntry.activity === act.code
-                        ? 'bg-blue-500 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="text-xl">{act.icon}</div>
-                    <div className="text-[10px] mt-1 leading-tight">{act.name}</div>
-                  </button>
+                  <div key={act.code} className="relative">
+                    <button
+                      onClick={() => setCurrentEntry({...currentEntry, activity: act.code})}
+                      onMouseEnter={() => setActiveTooltip(act.code)}
+                      onMouseLeave={() => setActiveTooltip(null)}
+                      onTouchStart={() => setActiveTooltip(activeTooltip === act.code ? null : act.code)}
+                      className={`w-full p-2 rounded-xl text-center transition-all transform hover:scale-105 ${
+                        currentEntry.activity === act.code
+                          ? 'bg-blue-500 text-white shadow-lg scale-105'
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      <div className="text-xl">{act.icon}</div>
+                      <div className="text-[10px] mt-1 leading-tight">{act.name}</div>
+                    </button>
+                    {activeTooltip === act.code && (
+                      <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg w-48 text-center">
+                        {act.tooltip}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
