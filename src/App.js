@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 const StressDiaryApp = () => {
   // ===== KONFIGŪRACIJA =====
   // Pakeiskite į savo Google Apps Script URL:
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzX0mjPhOAoMuV-5BXU2Cv3_qcMGj_HgM0mAfx7QOPRSkFIRJ3NOGY7g8fsHyuTv27-/exec';
+  const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
   // =========================
 
   const [screen, setScreen] = useState('start'); // start, diary, endDay, summary
   const [participantId, setParticipantId] = useState('');
+  const [hasConsent, setHasConsent] = useState(false);
   const [entries, setEntries] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -70,10 +71,10 @@ const StressDiaryApp = () => {
   ];
 
   const peopleOptions = [
-    { value: '0', label: 'Vienas/a' },
-    { value: '1', label: '1 žmogus' },
-    { value: '2-5', label: '2-5' },
-    { value: '5+', label: '5+' }
+    { value: '0', label: 'Tik aš viena/s' },
+    { value: '1', label: 'Aš ir dar 1 žmogus' },
+    { value: '2-5', label: 'Aš ir dar 2-5 žmonės' },
+    { value: '5+', label: 'Aš ir 5+ žmonių' }
   ];
 
   const formatTime = (date) => {
@@ -284,11 +285,31 @@ const StressDiaryApp = () => {
             </select>
           </div>
           
+          {/* Sutikimas dalyvauti */}
+          <div className="mb-6 bg-gray-50 rounded-xl p-4 max-h-48 overflow-y-auto">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasConsent}
+                onChange={(e) => setHasConsent(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 flex-shrink-0"
+              />
+              <span className="text-xs text-gray-600 leading-relaxed">
+                Patvirtinu, kad turėjau galimybę susipažinti su informacija, užduoti klausimus ir į juos gauti atsakymus. 
+                Laisva valia ir savanoriškai sutinku dalyvauti tyrime. 
+                Esu informuotas(-a), kad mano dalyvavimas yra savanoriškas ir galiu iš tyrimo pasitraukti bet kuriuo metu, nenurodydamas(-a) priežasties, nepatirdamas(-a) jokių neigiamų padarinių. 
+                Esu informuotas(-a), kad tyrimo metu surinktus duomenis gali peržiūrėti įgalioti asmenys (Kauno kolegijos etikos komitetas, duomenų apsaugos pareigūnas, LR akademinės etikos tarnyba, Valstybinė duomenų apsaugos inspekcija). 
+                Esu informuotas(-a), kas turės prieigą prie mano asmens duomenų, kaip jie bus saugomi ir kas bus su duomenimis pasibaigus tyrimui. 
+                Patvirtinu, kad gavau Informuoto asmens sutikimo formos egzempliorių, pasirašytą tyrimo vadovo.
+              </span>
+            </label>
+          </div>
+          
           <button
             onClick={startDay}
-            disabled={!participantId}
+            disabled={!participantId || !hasConsent}
             className={`w-full py-4 rounded-xl text-lg font-semibold transition-all transform ${
-              participantId 
+              participantId && hasConsent
                 ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-[1.02] active:scale-[0.98]' 
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
@@ -537,28 +558,9 @@ const StressDiaryApp = () => {
             {/* Thank you message */}
             <div className="text-center p-4 bg-green-50 rounded-2xl">
               <p className="text-green-800">
-                🙏 Jūsų indėlis labai svarbus mūsų tyrimui. Iki kitos dienos!
+                🙏 Jūsų indėlis labai svarbus mūsų tyrimui. Ačiū už dalyvavimą!
               </p>
             </div>
-
-            {/* New day button */}
-            <button
-              onClick={() => {
-                setScreen('start');
-                setEntries([]);
-                setParticipantId('');
-                setDayEndData({
-                  overallStress: 3,
-                  mainStressors: [],
-                  sensorComfort: 3,
-                  sensorIssues: '',
-                  dayNotes: ''
-                });
-              }}
-              className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700"
-            >
-              Pradėti naują dieną →
-            </button>
           </div>
         </div>
       </div>
