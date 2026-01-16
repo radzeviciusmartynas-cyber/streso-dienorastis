@@ -163,16 +163,14 @@ const StressDiaryApp = () => {
     };
 
     try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors', // Google Apps Script reikalauja no-cors
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+      // Naudojame URL parametrus vietoj POST body (patikimesnis su Google Apps Script)
+      const url = GOOGLE_SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+      
+      await fetch(url, {
+        method: 'GET',
+        mode: 'no-cors'
       });
       
-      // Su no-cors negalime tikrinti response, bet jei nėra error - laikome success
       setSendStatus('success');
     } catch (error) {
       console.error('Klaida siunčiant duomenis:', error);
