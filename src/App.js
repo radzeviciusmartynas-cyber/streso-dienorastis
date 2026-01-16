@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 
 const StressDiaryApp = () => {
+  // ===== KONFIGŪRACIJA =====
+  // Pakeiskite į savo Google Apps Script URL:
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKNtUEF88qFxfBVqWIG6q1zOt0Vh0TUaSpS17Zm3fUceTqPdf4RVV_goyWHML3Isif/exec';
+  // =========================
+
   const [screen, setScreen] = useState('start'); // start, diary, endDay, summary
   const [participantId, setParticipantId] = useState('');
   const [entries, setEntries] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState(null); // 'success', 'error', null
   const [currentEntry, setCurrentEntry] = useState({
     activity: '',
     stress: 3,
@@ -127,7 +134,56 @@ const StressDiaryApp = () => {
     return (sum / entries.length).toFixed(1);
   };
 
-  const finishDay = () => {
+  const sendToGoogleSheets = async () => {
+    setIsSending(true);
+    setSendStatus(null);
+
+    const payload = {
+      entries: entries.map(e => ({
+        timestamp: e.timestamp,
+        data: formatDate(e.timestamp),
+        laikas: formatTime(e.timestamp),
+        dalyvis: participantId,
+        veiklos_kodas: e.activity,
+        veikla: activities.find(a => a.code === e.activity)?.name || '',
+        stresas: e.stress,
+        zmones: e.people,
+        pastaba: e.note || ''
+      })),
+      dayEnd: {
+        data: formatDate(new Date()),
+        laikas: formatTime(new Date()),
+        dalyvis: participantId,
+        dienos_stresas: dayEndData.overallStress,
+        streso_priezastys: dayEndData.mainStressors.map(s => stressors.find(st => st.id === s)?.label).join(', '),
+        sensoriu_patogumas: dayEndData.sensorComfort,
+        sensoriu_pastabos: dayEndData.sensorIssues || '',
+        dienos_pastabos: dayEndData.dayNotes || ''
+      }
+    };
+
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Google Apps Script reikalauja no-cors
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      // Su no-cors negalime tikrinti response, bet jei nėra error - laikome success
+      setSendStatus('success');
+    } catch (error) {
+      console.error('Klaida siunčiant duomenis:', error);
+      setSendStatus('error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const finishDay = async () => {
+    await sendToGoogleSheets();
     setScreen('summary');
   };
 
@@ -366,15 +422,17 @@ const StressDiaryApp = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setScreen('diary')}
-                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium hover:bg-gray-50"
+                disabled={isSending}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-medium hover:bg-gray-50 disabled:opacity-50"
               >
                 ← Grįžti
               </button>
               <button
                 onClick={finishDay}
-                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors"
+                disabled={isSending}
+                className="flex-1 py-3 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Baigti dieną ✓
+                {isSending ? '⏳ Siunčiama...' : 'Baigti dieną ✓'}
               </button>
             </div>
           </div>
@@ -435,26 +493,47 @@ const StressDiaryApp = () => {
               </div>
             )}
 
-            {/* Export */}
-            <div className="bg-blue-50 rounded-2xl p-4 mb-6">
-              <h3 className="font-medium text-gray-700 mb-3">📥 Išsaugokite duomenis</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={exportToCSV}
-                  className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
-                >
-                  📥 Atsisiųsti CSV
-                </button>
-                <button
-                  onClick={copyToClipboard}
-                  className="flex-1 py-3 bg-white border-2 border-blue-200 text-blue-600 rounded-xl font-medium hover:bg-blue-50 transition-colors"
-                >
-                  📋 Kopijuoti
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Prašome išsaugoti duomenis prieš uždarant langą!
-              </p>
+            {/* Data status */}
+            <div className={`rounded-2xl p-4 mb-6 ${
+              sendStatus === 'success' ? 'bg-green-50' : 
+              sendStatus === 'error' ? 'bg-red-50' : 'bg-blue-50'
+            }`}>
+              {isSending ? (
+                <div className="text-center">
+                  <div className="text-2xl mb-2">⏳</div>
+                  <p className="text-gray-600">Siunčiami duomenys...</p>
+                </div>
+              ) : sendStatus === 'success' ? (
+                <div className="text-center">
+                  <div className="text-2xl mb-2">✅</div>
+                  <h3 className="font-medium text-green-800">Duomenys išsaugoti!</h3>
+                  <p className="text-sm text-green-600 mt-1">Jūsų duomenys sėkmingai išsiųsti tyrėjams.</p>
+                </div>
+              ) : sendStatus === 'error' ? (
+                <div className="text-center">
+                  <div className="text-2xl mb-2">⚠️</div>
+                  <h3 className="font-medium text-red-800">Nepavyko išsiųsti</h3>
+                  <p className="text-sm text-red-600 mt-1 mb-3">Prašome atsisiųsti duomenis rankiniu būdu:</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={exportToCSV}
+                      className="flex-1 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                    >
+                      📥 Atsisiųsti CSV
+                    </button>
+                    <button
+                      onClick={copyToClipboard}
+                      className="flex-1 py-2 bg-white border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors"
+                    >
+                      📋 Kopijuoti
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-gray-600">Duomenys bus išsiųsti automatiškai...</p>
+                </div>
+              )}
             </div>
 
             {/* Thank you message */}
